@@ -1,10 +1,16 @@
 {
   "name": "@lazarentertainment/react-oauth2-pkce",
-  "version": "2.0.7",
+  "version": "2.0.8",
   "description": "Authenticate against generic OAuth2 using PKCE",
   "author": "Gardner Bickford <gardner@bickford.nz>",
   "license": "MIT",
-  "repository": "lazarentertainment/react-oauth2-pkce",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/lazarentertainment/react-oauth2-pkce.git"
+  },
+  "publishConfig": {
+    "registry": "https://npm.pkg.github.com"
+  },
   "main": "dist/index.js",
   "module": "dist/index.modern.js",
   "source": "src/index.tsx",
@@ -22,13 +28,13 @@
     "postversion": "git push && git push --tags",
     "test": "run-s test:unit test:lint test:build",
     "test:build": "run-s build",
-    "test:lint": "eslint .",
+    "lint": "eslint .",
     "test:unit": "cross-env CI=1 react-scripts test --env=jsdom",
     "test:watch": "react-scripts test --env=jsdom"
   },
   "peerDependencies": {
-    "react": ">=16.8.0",
-    "react-dom": ">=16.8.0"
+    "react": ">=17.0.0",
+    "react-dom": ">=17.0.0"
   },
   "devDependencies": {
     "@testing-library/jest-dom": "^5.16.5",

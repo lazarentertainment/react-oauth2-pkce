@@ -5,7 +5,7 @@ export const toSnakeCase = (str: string): string => {
     .toLowerCase()
 }
 
-export const toUrlEncoded = (obj: {}): string => {
+export const toUrlEncoded = (obj: any): string => {
   return Object.keys(obj)
     .map(
       (k) =>
