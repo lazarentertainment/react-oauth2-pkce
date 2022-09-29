@@ -91,11 +91,13 @@ export class AuthService<TIDToken = JWTIDToken> {
     }
   }
 
-  getUser(): TIDToken {
+  getUser(): TIDToken | null {
+    let result: TIDToken | null = null
     const t = this.getAuthTokens()
-    if (null === t) return {}
-    const decoded = jwtDecode(t.id_token) as TIDToken
-    return decoded
+    if (t) {
+      result = jwtDecode(t.id_token) as TIDToken
+    }
+    return result
   }
 
   getCodeFromLocation(location: Location): string | null {
@@ -154,7 +156,7 @@ export class AuthService<TIDToken = JWTIDToken> {
   setAuthTokens(auth: AuthTokens): void {
     const { refreshSlack = 5 } = this.props
     const now = new Date().getTime()
-    auth.expires_at = now + (auth.expires_in + refreshSlack) * 1000
+    auth.expires_at = now + (+auth.expires_in + refreshSlack) * 1000
     window.localStorage.setItem('auth', JSON.stringify(auth))
   }
 
@@ -173,7 +175,7 @@ export class AuthService<TIDToken = JWTIDToken> {
     return window.localStorage.getItem('auth') !== null
   }
 
-  async logout(shouldEndSession = false): Promise<boolean> {
+  logout(shouldEndSession = false): boolean {
     this.removeItem('pkce')
     this.removeItem('auth')
     if (shouldEndSession) {
@@ -198,7 +200,7 @@ export class AuthService<TIDToken = JWTIDToken> {
   }
 
   // this will do a full page reload and to to the OAuth2 provider's login page and then redirect back to redirectUri
-  authorize(options?: AuthOptions): boolean {
+  async authorize(options?: AuthOptions): Promise<boolean> {
     const {
       clientId,
       provider,
@@ -212,7 +214,7 @@ export class AuthService<TIDToken = JWTIDToken> {
     window.localStorage.setItem('pkce', JSON.stringify(pkce))
     window.localStorage.setItem('preAuthUri', location.href)
     window.localStorage.removeItem('auth')
-    const codeChallenge = pkce.codeChallenge
+    const codeChallenge = await pkce.codeChallenge
 
     const query = {
       clientId,
@@ -267,13 +269,20 @@ export class AuthService<TIDToken = JWTIDToken> {
       }
     }
 
-    const response = await fetch(`${tokenEndpoint || `${provider}/token`}`, {
-      headers: {
-        'Content-Type': contentType || 'application/x-www-form-urlencoded'
-      },
-      method: 'POST',
-      body: toUrlEncoded(payload)
-    })
+    const response = await window.fetch(
+      `${tokenEndpoint || `${provider}/token`}`,
+      {
+        headers: {
+          'Content-Type': contentType || 'application/x-www-form-urlencoded'
+        },
+        method: 'POST',
+        body: toUrlEncoded(payload)
+      }
+    )
+    if (isRefresh && !response.ok) {
+      this.logout()
+      await this.login()
+    }
     this.removeItem('pkce')
     const json = await response.json()
     if (isRefresh && !json.refresh_token) {

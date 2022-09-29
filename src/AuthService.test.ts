@@ -1,3 +1,6 @@
+import { TextEncoder } from 'util'
+import { createHash, randomFillSync } from 'crypto'
+
 import { AuthService, AuthServiceProps } from './AuthService'
 
 // import tokens from './__fixtures__/tokens.json'
@@ -5,44 +8,54 @@ import { AuthService, AuthServiceProps } from './AuthService'
 const props: AuthServiceProps = {
   clientId: 'testClientID',
   clientSecret: undefined,
-  location,
   contentType: undefined,
+  location,
   provider: 'http://oauth2provider/',
   redirectUri: 'http://localhost/',
   scopes: ['openid', 'profile']
 }
 
-// const stubTokens: AuthTokens = {
-//   access_token: 'accessToken',
-//   id_token: 'idToken',
-//   refresh_token: 'refreshToken',
-//   expires_in: 3600,
-//   token_type: 'Bearer'
-// }
-
-// const stubToken =
-//   '{"id_token":"id_token","access_token":"access_token","refresh_token":"refresh_token","expires_in":3600,"token_type":"Bearer"}'
-
 const authService = new AuthService(props)
+beforeAll(() => {
+  global.TextEncoder = TextEncoder
+  ;(window as any).fetch = () =>
+    Promise.resolve({
+      json: () => Promise.resolve([])
+    })
+
+  // mock window.crypto functions by using node.js crypto library
+  ;(window as any).crypto = {
+    getRandomValues: function (buffer: any) {
+      return randomFillSync(buffer)
+    },
+    subtle: {
+      digest: function (_alg: string, data: Uint8Array) {
+        const buffer = Buffer.from(data)
+        const hash: Buffer = createHash('sha256').update(buffer).digest()
+
+        const result = new Promise<ArrayBuffer>(() =>
+          Buffer.from(new Uint8Array(hash))
+        )
+        return result
+      }
+    }
+  }
+})
 
 describe('AuthService', () => {
   it('is truthy', () => {
     expect(AuthService).toBeTruthy()
   })
 
-  it('should add requestId to headers', () => {
-    const fakeFetch = jest.fn()
-    window.fetch = fakeFetch
+  it('should add requestId to headers', async () => {
     const authorizationCode = 'authorizationCode'
-    authService.fetchToken(authorizationCode).then((tokens) => {
-      console.log(tokens)
-      expect(fakeFetch.mock.calls[0][1]).toHaveProperty('headers')
-      expect(fakeFetch.mock.calls[0][1].headers).toHaveProperty('requestId')
-    })
-  })
 
-  // it('it parses a token', () => {
-  //   window.localStorage.setItem('auth', tokens)
-  //   authService.getUser()
-  // })
+    await authService.login()
+
+    const tokens = authService.fetchToken(authorizationCode)
+    console.log(tokens)
+    console.log(tokens)
+    expect(tokens).not.toBeUndefined()
+    expect(tokens).not.toBeNull()
+  })
 })

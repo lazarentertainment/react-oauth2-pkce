@@ -3,7 +3,6 @@
   "extends": [
     "plugin:react/recommended",
     "plugin:@typescript-eslint/recommended",
-    "prettier/@typescript-eslint",
     "plugin:prettier/recommended"
   ],
   "env": {
@@ -22,6 +21,7 @@
     }
   },
   "rules": {
+    "@typescript-eslint/no-explicit-any": 0,
     "no-unused-vars": 0,
     "space-before-function-paren": 0,
     "react/prop-types": 0,
